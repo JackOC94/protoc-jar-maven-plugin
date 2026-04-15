@@ -67,8 +67,13 @@
 		</dependency>
 		<dependency>
 			<groupId>org.codehaus.plexus</groupId>
+			<artifactId>plexus-xml</artifactId>
+			<version>3.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.plexus</groupId>
 			<artifactId>plexus-utils</artifactId>
-			<version>3.0.24</version>
+			<version>4.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
@@ -93,18 +98,6 @@
 
 	</dependencies>
 
-	<profiles>
-		<profile>
-			<id>java8-doclint-disabled</id>
-			<activation>
-				<jdk>[1.8,)</jdk>
-			</activation>
-			<properties>
-				<javadoc.opts>-Xdoclint:none</javadoc.opts>
-			</properties>
-		</profile>
-	</profiles>
-
 	<build>
 
 		<plugins>
@@ -114,8 +107,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<release>21</release>
 				</configuration>
 			</plugin>
 			<plugin>
