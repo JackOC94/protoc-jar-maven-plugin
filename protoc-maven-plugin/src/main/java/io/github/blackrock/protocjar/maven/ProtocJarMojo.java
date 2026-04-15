@@ -817,7 +817,7 @@ public class ProtocJarMojo extends AbstractMojo
 	}
 
 	static boolean isEmpty(String s) {
-		return s == null || s.isBlank();
+		return s == null || s.isEmpty();
 	}
 
 	static class FileFilter implements IOFileFilter
