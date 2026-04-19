@@ -27,5 +27,22 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
+    - name: Ensure user settings.xml exists
+      # Takari's MavenJUnitTestRunner-based Mojo integration tests require
+      # a resolvable user settings.xml. Create an empty one so the takari
+      # testProperties goal writes the `user.settings` path into test.properties.
+      run: |
+        mkdir -p ~/.m2
+        if [ ! -f ~/.m2/settings.xml ]; then
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"' \
+            '    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+            '    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd"/>' \
+            > ~/.m2/settings.xml
+        fi
+    - name: Build and verify with Maven
+      # Use `verify` so the Mojo integration tests under takari-plugin-integration-testing
+      # actually run (they are bound to post-test phases). Skip GPG signing — the
+      # workflow does not provide signing keys.
+      run: mvn -B -s ~/.m2/settings.xml -Dgpg.skip=true verify --file pom.xml
