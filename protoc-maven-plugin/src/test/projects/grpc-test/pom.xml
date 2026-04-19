@@ -44,6 +44,16 @@
 			<artifactId>grpc-stub</artifactId>
 			<version>${grpc.version}</version>
 		</dependency>
+		<!--
+			javax.annotation.Generated is referenced by grpc-java 1.25.0's generated
+			sources but was removed from the JDK in Java 11. Add the external API jar
+			so compilation succeeds on Java 11+ (including the project's Java 21 baseline).
+		-->
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+			<version>1.3.2</version>
+		</dependency>
 	</dependencies>
 
 	<build>
