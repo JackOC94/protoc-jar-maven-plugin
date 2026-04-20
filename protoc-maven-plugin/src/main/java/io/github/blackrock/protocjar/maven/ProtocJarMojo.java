@@ -25,6 +25,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -396,7 +398,7 @@ public class ProtocJarMojo extends AbstractMojo
 				getLog().info("    " + input);
 				if ("all".equalsIgnoreCase(addProtoSources) || "inputs".equalsIgnoreCase(addProtoSources)) {
 					List<String> incs = Arrays.asList("**/*" + extension);
-					List<String> excs = new ArrayList<String>();
+					List<String> excs = new ArrayList<>();
 					projectHelper.addResource(project, input.getAbsolutePath(), incs, excs);
 				}
 			}
@@ -408,7 +410,7 @@ public class ProtocJarMojo extends AbstractMojo
 				getLog().info("    " + include);
 				if ("all".equalsIgnoreCase(addProtoSources)) {
 					List<String> incs = Arrays.asList("**/*" + extension);
-					List<String> excs = new ArrayList<String>();
+					List<String> excs = new ArrayList<>();
 					projectHelper.addResource(project, include.getAbsolutePath(), incs, excs);
 				}
 			}
@@ -492,34 +494,30 @@ public class ProtocJarMojo extends AbstractMojo
 		for (Artifact artifact : getArtifactsForProtoExtraction(transitive)) {
 			if (artifact.getFile() == null) continue;
 			getLog().debug("  Scanning artifact: " + artifact.getFile());
-			InputStream is = null;
 			try {
 				if (artifact.getFile().isDirectory()) {
-					for (File f : listFilesRecursively(artifact.getFile(), extension, new ArrayList<File>())) {
-						is = new FileInputStream(f);
-						String name = f.getAbsolutePath().replace(artifact.getFile().getAbsolutePath(), "");
-						if (name.startsWith("/")) name = name.substring(1);
-						writeProtoFile(dir, is, name);
-						is.close();
+					for (File f : listFilesRecursively(artifact.getFile(), extension, new ArrayList<>())) {
+						try (InputStream is = new FileInputStream(f)) {
+							String name = f.getAbsolutePath().replace(artifact.getFile().getAbsolutePath(), "");
+							if (name.startsWith("/")) name = name.substring(1);
+							writeProtoFile(dir, is, name);
+						}
 					}
 				}
 				else {
-					ZipInputStream zis = new ZipInputStream(new FileInputStream(artifact.getFile()));
-					is = zis;
-					ZipEntry ze;
-					while ((ze = zis.getNextEntry()) != null) {
-						if (ze.isDirectory() || !ze.getName().toLowerCase().endsWith(extension)) continue;
-						writeProtoFile(dir, zis, ze.getName());
-						zis.closeEntry();
-					}					
+					try (ZipInputStream zis = new ZipInputStream(new FileInputStream(artifact.getFile()))) {
+						ZipEntry ze;
+						while ((ze = zis.getNextEntry()) != null) {
+							if (ze.isDirectory() || !ze.getName().toLowerCase().endsWith(extension)) continue;
+							writeProtoFile(dir, zis, ze.getName());
+							zis.closeEntry();
+						}
+					}
 				}
 			}
 			catch (IOException e) {
 				getLog().info("  Error scanning artifact: " + artifact.getFile() + ": " + e);
 			}
-			finally {
-				if (is != null) is.close();
-			}			
 		}
 	}
 
@@ -541,13 +539,8 @@ public class ProtocJarMojo extends AbstractMojo
 		getLog().info("    " + name);
 		File protoOut = new File(dir, name);
 		protoOut.getParentFile().mkdirs();
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream(protoOut);
-			streamCopy(zis, fos);
-		}
-		finally {
-			if (fos != null) fos.close();
+		try (FileOutputStream fos = new FileOutputStream(protoOut)) {
+			zis.transferTo(fos);
 		}
 	}
 
@@ -682,7 +675,7 @@ public class ProtocJarMojo extends AbstractMojo
 	}
 
 	private Collection<String> buildCommand(File file, String version, String type, String pluginPath, File outputDir, String outputOptions) throws MojoExecutionException {
-		Collection<String> cmd = new ArrayList<String>();
+		Collection<String> cmd = new ArrayList<>();
 		populateIncludes(cmd);
 		cmd.add("-I" + file.getParentFile().getAbsolutePath());
 		if ("descriptor".equals(type)) {
@@ -812,25 +805,9 @@ public class ProtocJarMojo extends AbstractMojo
 		}
 	}
 
-	static File copyFile(File srcFile, File destFile) throws IOException {		
-		FileInputStream is = null;
-		FileOutputStream os = null;
-		try {
-			is = new FileInputStream(srcFile);
-			os = new FileOutputStream(destFile);
-			streamCopy(is, os);
-		}
-		finally {
-			if (is != null) is.close();
-			if (os != null) os.close();
-		}
+	static File copyFile(File srcFile, File destFile) throws IOException {
+		Files.copy(srcFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		return destFile;
-	}
-
-	static void streamCopy(InputStream in, OutputStream out) throws IOException {
-		int read = 0;
-		byte[] buf = new byte[4096];
-		while ((read = in.read(buf)) > 0) out.write(buf, 0, read);		
 	}
 
 	static boolean isEmpty(String s) {
