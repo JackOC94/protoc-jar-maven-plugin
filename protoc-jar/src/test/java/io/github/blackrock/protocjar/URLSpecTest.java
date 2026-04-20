@@ -27,7 +27,7 @@ public class URLSpecTest
 		URLSpec srcUrl = new URLSpec("https://repo.maven.apache.org/maven2/", "localhost", 3128);
 		URLConnection con = srcUrl.openConnection();
 		InputStream is = con.getInputStream();
-		Protoc.streamCopy(is, System.out);
+		is.transferTo(System.out);
 		log(srcUrl);
 	}
 

@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -91,7 +93,7 @@ public class Protoc
 		ProtocVersion protocVersion = ProtocVersion.PROTOC_VERSION;
 		String javaShadedOutDir = null;
 		
-		List<String> protocCmd = new ArrayList<String>();
+		List<String> protocCmd = new ArrayList<>();
 		protocCmd.add(cmd);
 		for (String arg : argList) {
 			if (arg.startsWith("--java_shaded_out=")) {
@@ -144,33 +146,21 @@ public class Protoc
 			}
 			else if (file.getName().endsWith(".java")) {
 				//log(file.getPath());
-				File tmpFile = null;
-				PrintWriter pw = null;
-				BufferedReader br = null;
-				FileInputStream is = null;
-				FileOutputStream os = null;
+				File tmpFile = File.createTempFile(file.getName(), null);
 				try {
-					tmpFile = File.createTempFile(file.getName(), null);
-					pw = new PrintWriter(tmpFile);
-					br = new BufferedReader(new FileReader(file));
-					String line;
-					while ((line = br.readLine()) != null) {
-						pw.println(line.replace("com.google.protobuf", "io.github.blackrock.protobuf" + shadingVersion));
+					try (BufferedReader br = new BufferedReader(new FileReader(file));
+						 PrintWriter pw = new PrintWriter(tmpFile)) {
+						String line;
+						while ((line = br.readLine()) != null) {
+							pw.println(line.replace("com.google.protobuf", "io.github.blackrock.protobuf" + shadingVersion));
+						}
 					}
-					pw.close();
-					br.close();
 					// tmpFile.renameTo(file) only works on same filesystem, make copy instead:
 					if (!file.delete()) log("Failed to delete: " + file.getName());
-					is = new FileInputStream(tmpFile);
-					os = new FileOutputStream(file);
-					streamCopy(is, os);
+					Files.copy(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				}
 				finally {
-					if (br != null) { try {br.close();} catch (Exception e) {} }
-					if (pw != null) { try {pw.close();} catch (Exception e) {} }
-					if (is != null) { try {is.close();} catch (Exception e) {} }
-					if (os != null) { try {os.close();} catch (Exception e) {} }
-					if (tmpFile != null) tmpFile.delete();
+					tmpFile.delete();
 				}
 			}
 		}
@@ -322,19 +312,15 @@ public class Protoc
 		}
 		
 		File tmpFile = File.createTempFile("protocjar", ".tmp");
-		InputStream is = null;
-		FileOutputStream os = null;
 		try {
 			log("downloading: " + srcUrl);
 			URLConnection con = srcUrl.openConnection();
 			con.setRequestProperty("User-Agent", "Mozilla"); // sonatype only returns proper maven-metadata.xml if this is set
 			con.setConnectTimeout(5000); // 5 sec timeout
 			con.setReadTimeout(5000); // 5 sec timeout
-			is = con.getInputStream();
-			os = new FileOutputStream(tmpFile);
-			streamCopy(is, os);
-			is.close();
-			os.close();
+			try (InputStream is = con.getInputStream()) {
+				Files.copy(is, tmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}
 			destFile.getParentFile().mkdirs();
 			destFile.delete();
 			tmpFile.renameTo(destFile);
@@ -343,10 +329,6 @@ public class Protoc
 		catch (IOException e) {
 			tmpFile.delete();
 			if (!destFile.exists()) throw e; // if download failed but had cached version, ignore exception
-		}
-		finally {
-			if (is != null) is.close();
-			if (os != null) os.close();
 		}
 		
 		log("saved: " + destFile);
@@ -381,26 +363,12 @@ public class Protoc
 	public static File populateFile(String srcFilePath, File destFile) throws IOException {
 		String resourcePath = "/" + srcFilePath; // resourcePath for jar, srcFilePath for test
 		
-		FileOutputStream os = null;
-		InputStream is = Protoc.class.getResourceAsStream(resourcePath);
-		if (is == null) is = new FileInputStream(srcFilePath);
-		
-		try {
-			os = new FileOutputStream(destFile);
-			streamCopy(is, os);
-		}
-		finally {
-			if (is != null) is.close();
-			if (os != null) os.close();
+		InputStream resourceStream = Protoc.class.getResourceAsStream(resourcePath);
+		try (InputStream is = (resourceStream != null) ? resourceStream : new FileInputStream(srcFilePath)) {
+			Files.copy(is, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		}
 		
 		return destFile;
-	}
-
-	public static void streamCopy(InputStream in, OutputStream out) throws IOException {
-		int read = 0;
-		byte[] buf = new byte[4096];
-		while ((read = in.read(buf)) > 0) out.write(buf, 0, read);		
 	}
 
 	static File getWebcacheDir() throws IOException {
@@ -447,7 +415,7 @@ public class Protoc
 
 		public void run() {
 			try {
-				streamCopy(mIn, mOut);
+				mIn.transferTo(mOut);
 			}
 			catch (IOException e) {
 				e.printStackTrace();
@@ -480,7 +448,7 @@ public class Protoc
 		"include/google/protobuf/wrappers.proto",
 	};
 
-	static Map<String,String[]> sStdTypesMap = new HashMap<String,String[]>();
+	static Map<String,String[]> sStdTypesMap = new HashMap<>();
 	static {
 		sStdTypesMap.put("2", sStdTypesProto2);
 		sStdTypesMap.put("3", sStdTypesProto3);
