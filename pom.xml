@@ -15,6 +15,11 @@
     <url>https://github.com/blackrock/protoc-jar-maven-plugin</url>
     <description>Protocol Buffers protobuf maven plugin. Performs protobuf code generation using Protocol Buffers compiler - executable JAR and API.</description>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>21</maven.compiler.release>
+    </properties>
+
     <organization>
         <name>BlackRock</name>
         <url>https://www.blackrock.com/</url>
@@ -61,7 +66,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.2.7</version>
                 <executions>
                     <execution>
                         <id>sign-artifacts</id>
