@@ -21,7 +21,9 @@ jobs:
 
     strategy:
       matrix:
-        java-version: ['17', '21']
+        # Only Java 21 is supported: the project compiles with
+        # <maven.compiler.release>21</maven.compiler.release>, which requires JDK 21+.
+        java-version: ['21']
 
     steps:
     - uses: actions/checkout@v4
