@@ -396,7 +396,7 @@ public class ProtocJarMojo extends AbstractMojo
 				getLog().info("    " + input);
 				if ("all".equalsIgnoreCase(addProtoSources) || "inputs".equalsIgnoreCase(addProtoSources)) {
 					List<String> incs = Arrays.asList("**/*" + extension);
-					List<String> excs = new ArrayList<String>();
+					List<String> excs = new ArrayList<>();
 					projectHelper.addResource(project, input.getAbsolutePath(), incs, excs);
 				}
 			}
@@ -408,7 +408,7 @@ public class ProtocJarMojo extends AbstractMojo
 				getLog().info("    " + include);
 				if ("all".equalsIgnoreCase(addProtoSources)) {
 					List<String> incs = Arrays.asList("**/*" + extension);
-					List<String> excs = new ArrayList<String>();
+					List<String> excs = new ArrayList<>();
 					projectHelper.addResource(project, include.getAbsolutePath(), incs, excs);
 				}
 			}
@@ -492,34 +492,30 @@ public class ProtocJarMojo extends AbstractMojo
 		for (Artifact artifact : getArtifactsForProtoExtraction(transitive)) {
 			if (artifact.getFile() == null) continue;
 			getLog().debug("  Scanning artifact: " + artifact.getFile());
-			InputStream is = null;
 			try {
 				if (artifact.getFile().isDirectory()) {
-					for (File f : listFilesRecursively(artifact.getFile(), extension, new ArrayList<File>())) {
-						is = new FileInputStream(f);
+					for (File f : listFilesRecursively(artifact.getFile(), extension, new ArrayList<>())) {
 						String name = f.getAbsolutePath().replace(artifact.getFile().getAbsolutePath(), "");
 						if (name.startsWith("/")) name = name.substring(1);
-						writeProtoFile(dir, is, name);
-						is.close();
+						try (InputStream is = new FileInputStream(f)) {
+							writeProtoFile(dir, is, name);
+						}
 					}
 				}
 				else {
-					ZipInputStream zis = new ZipInputStream(new FileInputStream(artifact.getFile()));
-					is = zis;
-					ZipEntry ze;
-					while ((ze = zis.getNextEntry()) != null) {
-						if (ze.isDirectory() || !ze.getName().toLowerCase().endsWith(extension)) continue;
-						writeProtoFile(dir, zis, ze.getName());
-						zis.closeEntry();
-					}					
+					try (ZipInputStream zis = new ZipInputStream(new FileInputStream(artifact.getFile()))) {
+						ZipEntry ze;
+						while ((ze = zis.getNextEntry()) != null) {
+							if (ze.isDirectory() || !ze.getName().toLowerCase().endsWith(extension)) continue;
+							writeProtoFile(dir, zis, ze.getName());
+							zis.closeEntry();
+						}
+					}
 				}
 			}
 			catch (IOException e) {
 				getLog().info("  Error scanning artifact: " + artifact.getFile() + ": " + e);
 			}
-			finally {
-				if (is != null) is.close();
-			}			
 		}
 	}
 
@@ -541,13 +537,8 @@ public class ProtocJarMojo extends AbstractMojo
 		getLog().info("    " + name);
 		File protoOut = new File(dir, name);
 		protoOut.getParentFile().mkdirs();
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream(protoOut);
+		try (FileOutputStream fos = new FileOutputStream(protoOut)) {
 			streamCopy(zis, fos);
-		}
-		finally {
-			if (fos != null) fos.close();
 		}
 	}
 
@@ -682,7 +673,7 @@ public class ProtocJarMojo extends AbstractMojo
 	}
 
 	private Collection<String> buildCommand(File file, String version, String type, String pluginPath, File outputDir, String outputOptions) throws MojoExecutionException {
-		Collection<String> cmd = new ArrayList<String>();
+		Collection<String> cmd = new ArrayList<>();
 		populateIncludes(cmd);
 		cmd.add("-I" + file.getParentFile().getAbsolutePath());
 		if ("descriptor".equals(type)) {
@@ -812,17 +803,10 @@ public class ProtocJarMojo extends AbstractMojo
 		}
 	}
 
-	static File copyFile(File srcFile, File destFile) throws IOException {		
-		FileInputStream is = null;
-		FileOutputStream os = null;
-		try {
-			is = new FileInputStream(srcFile);
-			os = new FileOutputStream(destFile);
+	static File copyFile(File srcFile, File destFile) throws IOException {
+		try (FileInputStream is = new FileInputStream(srcFile);
+		     FileOutputStream os = new FileOutputStream(destFile)) {
 			streamCopy(is, os);
-		}
-		finally {
-			if (is != null) is.close();
-			if (os != null) os.close();
 		}
 		return destFile;
 	}
