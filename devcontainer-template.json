@@ -14,17 +14,14 @@
 				"21-bookworm",
                 "17-bookworm",
                 "11-bookworm",
-                "8-bookworm",
 				"21-bullseye",
                 "17-bullseye",
                 "11-bullseye",
-                "8-bullseye",
 				"21-buster",
                 "17-buster",
-                "11-buster",
-                "8-buster"
+                "11-buster"
             ],
-            "default": "21-bullseye"
+            "default": "21-bookworm"
         },
         "installMaven": {
             "type": "boolean",

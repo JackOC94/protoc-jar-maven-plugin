@@ -20,7 +20,6 @@
 package io.github.blackrock.protocjar;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -252,13 +251,10 @@ public class PlatformDetector
      * based on the {@code ID}, {@code ID_LIKE}, and {@code VERSION_ID} entries.
      */
     private static LinuxRelease parseLinuxOsReleaseFile(File file) {
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
-
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"))) {
             String id = null;
             String version = null;
-            Set<String> likeSet = new LinkedHashSet<String>();
+            Set<String> likeSet = new LinkedHashSet<>();
             String line;
             while((line = reader.readLine()) != null) {
                 // Parse the ID line.
@@ -293,8 +289,6 @@ public class PlatformDetector
             }
         } catch (IOException ignored) {
             // Just absorb. Don't treat failure to read /etc/os-release as an error.
-        } finally {
-            closeQuietly(reader);
         }
         return null;
     }
@@ -305,10 +299,7 @@ public class PlatformDetector
      * Other variants will return {@code null}.
      */
     private static LinuxRelease parseLinuxRedhatReleaseFile(File file) {
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
-
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"))) {
             // There is only a single line in this file.
             String line = reader.readLine();
             if (line != null) {
@@ -332,7 +323,7 @@ public class PlatformDetector
                     version = versionMatcher.group(1);
                 }
 
-                Set<String> likeSet = new LinkedHashSet<String>();
+                Set<String> likeSet = new LinkedHashSet<>();
                 likeSet.addAll(Arrays.asList(DEFAULT_REDHAT_VARIANTS));
                 likeSet.add(id);
 
@@ -340,8 +331,6 @@ public class PlatformDetector
             }
         } catch (IOException ignored) {
             // Just absorb. Don't treat failure to read /etc/os-release as an error.
-        } finally {
-            closeQuietly(reader);
         }
         return null;
     }
@@ -349,16 +338,6 @@ public class PlatformDetector
     private static String normalizeOsReleaseValue(String value) {
         // Remove any quotes from the string.
         return value.trim().replace("\"", "");
-    }
-
-    private static void closeQuietly(Closeable obj) {
-        try {
-            if (obj != null) {
-                obj.close();
-            }
-        } catch (IOException ignored) {
-            // Ignore.
-        }
     }
 
     private static class LinuxRelease {
