@@ -11,20 +11,14 @@
             "type": "string",
             "description": "Java version (use -bookworm, or -bullseye variants on local arm64/Apple Silicon):",
             "proposals": [
-				"21-bookworm",
                 "17-bookworm",
-                "11-bookworm",
-                "8-bookworm",
-				"21-bullseye",
+                "21-bookworm",
                 "17-bullseye",
-                "11-bullseye",
-                "8-bullseye",
-				"21-buster",
+                "21-bullseye",
                 "17-buster",
-                "11-buster",
-                "8-buster"
+                "21-buster"
             ],
-            "default": "21-bullseye"
+            "default": "17-bookworm"
         },
         "installMaven": {
             "type": "boolean",

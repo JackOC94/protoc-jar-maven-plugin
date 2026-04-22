@@ -8,7 +8,7 @@ Supports embedded protoc versions 2.4.1, 2.5.0, 2.6.1, 3.11.4, 3.25.1, and any b
 
 ## Installation
 
-* Requires Maven 3.8.x to build.
+* Requires JDK 17+ and Maven 3.8.x to build.
 
 ## Usage
 
