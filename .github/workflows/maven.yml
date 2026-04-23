@@ -19,13 +19,18 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: ['17', '21']
+
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up JDK 8
-      uses: actions/setup-java@v3
+    - uses: actions/checkout@v4
+    - name: Set up JDK ${{ matrix.java-version }}
+      uses: actions/setup-java@v4
       with:
-        java-version: '8'
+        java-version: ${{ matrix.java-version }}
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B -Dmaven.compiler.release=17 -Dgpg.skip=true package --file pom.xml
