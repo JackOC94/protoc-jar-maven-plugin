@@ -15,12 +15,12 @@
  */
 package io.github.blackrock.protocjar.maven;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
 import java.util.Properties;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.github.blackrock.protocjar.PlatformDetector;
 
