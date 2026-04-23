@@ -91,7 +91,7 @@ public class Protoc
 		ProtocVersion protocVersion = ProtocVersion.PROTOC_VERSION;
 		String javaShadedOutDir = null;
 		
-		List<String> protocCmd = new ArrayList<String>();
+		List<String> protocCmd = new ArrayList<>();
 		protocCmd.add(cmd);
 		for (String arg : argList) {
 			if (arg.startsWith("--java_shaded_out=")) {
@@ -143,33 +143,24 @@ public class Protoc
 				doShading(file, version);
 			}
 			else if (file.getName().endsWith(".java")) {
-				//log(file.getPath());
 				File tmpFile = null;
-				PrintWriter pw = null;
-				BufferedReader br = null;
-				FileInputStream is = null;
-				FileOutputStream os = null;
 				try {
 					tmpFile = File.createTempFile(file.getName(), null);
-					pw = new PrintWriter(tmpFile);
-					br = new BufferedReader(new FileReader(file));
-					String line;
-					while ((line = br.readLine()) != null) {
-						pw.println(line.replace("com.google.protobuf", "io.github.blackrock.protobuf" + shadingVersion));
+					try (PrintWriter pw = new PrintWriter(tmpFile);
+						 BufferedReader br = new BufferedReader(new FileReader(file))) {
+						String line;
+						while ((line = br.readLine()) != null) {
+							pw.println(line.replace("com.google.protobuf", "io.github.blackrock.protobuf" + shadingVersion));
+						}
 					}
-					pw.close();
-					br.close();
 					// tmpFile.renameTo(file) only works on same filesystem, make copy instead:
 					if (!file.delete()) log("Failed to delete: " + file.getName());
-					is = new FileInputStream(tmpFile);
-					os = new FileOutputStream(file);
-					streamCopy(is, os);
+					try (FileInputStream is = new FileInputStream(tmpFile);
+						 FileOutputStream os = new FileOutputStream(file)) {
+						streamCopy(is, os);
+					}
 				}
 				finally {
-					if (br != null) { try {br.close();} catch (Exception e) {} }
-					if (pw != null) { try {pw.close();} catch (Exception e) {} }
-					if (is != null) { try {is.close();} catch (Exception e) {} }
-					if (os != null) { try {os.close();} catch (Exception e) {} }
 					if (tmpFile != null) tmpFile.delete();
 				}
 			}
@@ -322,19 +313,16 @@ public class Protoc
 		}
 		
 		File tmpFile = File.createTempFile("protocjar", ".tmp");
-		InputStream is = null;
-		FileOutputStream os = null;
 		try {
 			log("downloading: " + srcUrl);
 			URLConnection con = srcUrl.openConnection();
 			con.setRequestProperty("User-Agent", "Mozilla"); // sonatype only returns proper maven-metadata.xml if this is set
 			con.setConnectTimeout(5000); // 5 sec timeout
 			con.setReadTimeout(5000); // 5 sec timeout
-			is = con.getInputStream();
-			os = new FileOutputStream(tmpFile);
-			streamCopy(is, os);
-			is.close();
-			os.close();
+			try (InputStream is = con.getInputStream();
+				 FileOutputStream os = new FileOutputStream(tmpFile)) {
+				streamCopy(is, os);
+			}
 			destFile.getParentFile().mkdirs();
 			destFile.delete();
 			tmpFile.renameTo(destFile);
@@ -343,10 +331,6 @@ public class Protoc
 		catch (IOException e) {
 			tmpFile.delete();
 			if (!destFile.exists()) throw e; // if download failed but had cached version, ignore exception
-		}
-		finally {
-			if (is != null) is.close();
-			if (os != null) os.close();
 		}
 		
 		log("saved: " + destFile);
@@ -381,17 +365,10 @@ public class Protoc
 	public static File populateFile(String srcFilePath, File destFile) throws IOException {
 		String resourcePath = "/" + srcFilePath; // resourcePath for jar, srcFilePath for test
 		
-		FileOutputStream os = null;
-		InputStream is = Protoc.class.getResourceAsStream(resourcePath);
-		if (is == null) is = new FileInputStream(srcFilePath);
-		
-		try {
-			os = new FileOutputStream(destFile);
+		InputStream resource = Protoc.class.getResourceAsStream(resourcePath);
+		try (InputStream is = resource != null ? resource : new FileInputStream(srcFilePath);
+			 FileOutputStream os = new FileOutputStream(destFile)) {
 			streamCopy(is, os);
-		}
-		finally {
-			if (is != null) is.close();
-			if (os != null) os.close();
 		}
 		
 		return destFile;
@@ -480,7 +457,7 @@ public class Protoc
 		"include/google/protobuf/wrappers.proto",
 	};
 
-	static Map<String,String[]> sStdTypesMap = new HashMap<String,String[]>();
+	static Map<String,String[]> sStdTypesMap = new HashMap<>();
 	static {
 		sStdTypesMap.put("2", sStdTypesProto2);
 		sStdTypesMap.put("3", sStdTypesProto3);
