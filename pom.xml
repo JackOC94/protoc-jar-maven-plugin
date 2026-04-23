@@ -15,6 +15,11 @@
     <url>https://github.com/blackrock/protoc-jar-maven-plugin</url>
     <description>Protocol Buffers protobuf maven plugin. Performs protobuf code generation using Protocol Buffers compiler - executable JAR and API.</description>
 
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
     <organization>
         <name>BlackRock</name>
         <url>https://www.blackrock.com/</url>
