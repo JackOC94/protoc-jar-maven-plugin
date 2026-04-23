@@ -16,14 +16,13 @@
 	<description>Protocol Buffers codegen plugin - based on protoc-jar executable JAR</description>
 
 	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>4.13.2</junit.version>
 
 		<maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
 		<maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
 		<maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
-		<maven-plugin-plugin.version>3.11.0</maven-plugin-plugin.version>
-		<maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+		<maven-plugin-plugin.version>3.13.1</maven-plugin-plugin.version>
+		<maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
 		<maven-jar-plugin.version>3.4.0</maven-jar-plugin.version>
 		<maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 	</properties>
@@ -68,7 +67,7 @@
 		<dependency>
 			<groupId>org.codehaus.plexus</groupId>
 			<artifactId>plexus-utils</artifactId>
-			<version>3.0.24</version>
+			<version>4.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
@@ -93,18 +92,6 @@
 
 	</dependencies>
 
-	<profiles>
-		<profile>
-			<id>java8-doclint-disabled</id>
-			<activation>
-				<jdk>[1.8,)</jdk>
-			</activation>
-			<properties>
-				<javadoc.opts>-Xdoclint:none</javadoc.opts>
-			</properties>
-		</profile>
-	</profiles>
-
 	<build>
 
 		<plugins>
@@ -113,10 +100,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${maven-compiler-plugin.version}</version>
-				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>io.takari.maven.plugins</groupId>
@@ -200,25 +183,8 @@
 						<goal>jar</goal>
 						</goals>
 						<configuration>
-							<additionalparam>${javadoc.opts}</additionalparam>
+							<doclint>none</doclint>
 						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<!-- for test: takari-plugin-integration-testing -->
-			<plugin>
-				<groupId>io.takari.maven.plugins</groupId>
-				<artifactId>takari-lifecycle-plugin</artifactId>
-				<version>1.11.9</version>
-				<extensions>true</extensions>
-				<executions>
-					<execution>
-						<id>testProperties</id>
-						<phase>process-test-resources</phase>
-						<goals>
-							<goal>testProperties</goal>
-						</goals>
 					</execution>
 				</executions>
 			</plugin>
